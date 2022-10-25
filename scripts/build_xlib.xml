@@ -1,0 +1,156 @@
+<!-- build_xlib.xml
+
+Description:
+	This ANT script constructs <project root>/xlib.
+
+	To use this script, you must update properties is <project root>/scripts/build.properties or overide
+	them from commandline (using -D option). For example:
+
+		set PATH=C:\depot\external\apache-ant\apache-ant-1.8.4\bin;%PATH%
+		ant -XX:MaxPermSize=512m -Dnlbuildroot=C:/depot/PolicyStudio/dev/BuildScript_1205 -Dexternal.dir=c:/depot/external -Dnlexternaldir=c:/depot/external -f scripts/build_xlib.xml
+
+	or
+
+		set PATH=C:\depot\external\apache-ant\apache-ant-1.8.4\bin;%PATH%
+		set ANT_OPTS=-XX:MaxPermSize=512m -Dnlbuildroot=%NLBUILDROOT% -Dexternal.dir=%NLEXTERNALDIR% -Dnlexternaldir=%NLEXTERNALDIR%
+		ant -f scripts/build_xlib.xml -v
+-->
+
+<project name="build_xlib" default="all" basedir=".">
+
+	<!-- Debug
+	<echoproperties />
+	<fail message="INFO: Debug" />
+	-->
+
+	<!-- Property files -->
+	<property file="${basedir}/build.properties" />
+
+	<!-- Global properties -->
+	<property name="lib_dir" location="${nlbuildroot}/lib" />
+	<property name="lib_jar_dir" value="${lib_dir}/jar" />
+	<property name="xlib_dir" location="${nlbuildroot}/xlib" />
+	<property name="xlib_jar_dir" value="${xlib_dir}/jar" />
+
+	<!-- TBD: psexternaldir is a temporary variable. It will be removed with all files
+		under lib are extracted automatically from build artifacts. -->
+	<property name="psexternaldir" location="${nlbuildroot}/lib" />
+
+	<!-- Dump properties -->
+	<echoproperties />
+
+	<echo message="INFO: Dump properties completed" />
+
+	<!-- Sanity checks -->
+	<fail message="nlbuildroot is not set" unless="nlbuildroot" />
+	<fail message="nlbuildroot is empty">
+		<condition>
+			<equals arg1="${nlbuildroot}" arg2="" trim="true" />
+		</condition>
+	</fail>
+	<available file="${nlbuildroot}" type="dir" property="local.nlbuildroot_exists" />
+	<fail message="nlbuildroot directory does not exist - ${nlbuildroot}" unless="local.nlbuildroot_exists" />
+
+	<fail message="nlexternaldir is not set" unless="nlexternaldir" />
+	<fail message="nlexternaldir is empty">
+		<condition>
+			<equals arg1="${nlexternaldir}" arg2="" trim="true" />
+		</condition>
+	</fail>
+	<available file="${nlexternaldir}" type="dir" property="local.nlexternaldir_exists" />
+	<fail message="nlexternaldir directory does not exist - ${nlexternaldir}" unless="local.nlexternaldir_exists" />
+
+	<fail message="xlib_destiny_build_artifacts_zip_file is not set" unless="xlib_destiny_build_artifacts_zip_file" />
+	<fail message="xlib_destiny_build_artifacts_zip_file is empty">
+		<condition>
+			<equals arg1="${xlib_destiny_build_artifacts_zip_file}" arg2="" trim="true" />
+		</condition>
+	</fail>
+	<available file="${xlib_destiny_build_artifacts_zip_file}" type="file" property="local.sdk_zip_file_exists" />
+	<fail message="xlib_destiny_build_artifacts_zip_file directory does not exist - ${xlib_destiny_build_artifacts_zip_file}" unless="local.sdk_zip_file_exists" />
+
+	<echo message="INFO: Sanity check completed (no error)" />
+
+	<!-- Targets -->
+	<target name="all" depends="clean, prepare_destiny_jar, copy_external_jars" />
+
+	<target name="prepare_destiny_jar">
+			<mkdir dir="${lib_jar_dir}" />
+
+			<!-- Extract files -->
+			<unzip src="${xlib_destiny_build_artifacts_zip_file}" dest="${xlib_jar_dir}" overwrite="yes">
+				<patternset>
+					<include name="agent/lib/agent-common.jar" />
+					<include name="agent/lib/agent-controlmanager.jar" />
+					<include name="agent/lib/agent-ipc.jar" />
+					<include name="agent/lib/client-pf.jar" />
+					<include name="agent/lib/common-domain-types.jar" />
+					<include name="agent/lib/common-domain.jar" />
+					<include name="agent/lib/common-framework-types.jar" />
+					<include name="agent/lib/common-framework.jar" />
+					<include name="agent/lib/common-version-impl.jar" />
+					<include name="agent/lib/common-version.jar" />
+					<include name="agent/lib/crypt.jar" />
+					<include name="agent/lib/server-shared-types.jar" />
+					<include name="agent/lib/version-types.jar" />
+					<include name="agent/lib/version.jar" />
+					<include name="app-framework.jar" />
+					<include name="batchdeployer.jar" />
+					<include name="client-security-config.jar" />
+					<include name="common-res.jar" />
+					<include name="logremover.jar" />
+					<include name="policy-services.jar" />
+					<include name="policy-types.jar" />
+					<include name="server-framework.jar" />
+					<include name="server-shared-services.jar" />
+				</patternset>
+				<mapper type="flatten" />
+			</unzip>
+
+			<!-- Check if file exists 
+			Notes: Currently, Unzip task or ZipFileSet does not have a way to report error if a file
+			cannot be found in a zip file. In addition, there is no simple way to check if a file 
+			exists in Ant. We can call out to Bash to check if a file exists, but that creates an
+			unnecessary dependency on Bash. In the following, we try to check if a file exist using
+			a fake move. Doing this, an error will be generated if a file does not exist.
+			-->
+			<move file="${xlib_jar_dir}/agent-ipc.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/agent-controlmanager.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/agent-common.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/app-framework.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/client-pf.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/client-security-config.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/common-domain-types.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/common-domain.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/common-framework-types.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/common-framework.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/common-res.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/common-version-impl.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/common-version.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/crypt.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/policy-services.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/policy-types.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/server-framework.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/server-shared-services.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/server-shared-types.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/version-types.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/version.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/batchdeployer.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			<move file="${xlib_jar_dir}/logremover.jar" todir="${lib_jar_dir}" preservelastmodified="true" overwrite="true" />
+			
+		</target>
+
+	<target name="copy_external_jars">
+		<mkdir dir="${xlib_jar_dir}" />
+
+		<copy file="${nlexternaldir}/commons-csv/commons-csv-1.6/commons-csv-1.6.jar" tofile="${xlib_jar_dir}/commons-csv-1.6.jar" preservelastmodified="true" overwrite="false" verbose="true" />
+		
+		
+		<move file="${xlib_jar_dir}/commons-csv-1.6.jar" todir="${xlib_jar_dir}" preservelastmodified="true" overwrite="true" />
+	</target>
+
+	<target name="clean">
+		<delete dir="${xlib_dir}" />
+	</target>
+</project>
+
